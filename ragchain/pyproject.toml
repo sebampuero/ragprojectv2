@@ -15,4 +15,6 @@ dependencies = [
     "langchain-deepseek>=1.0.1",
     "langchain-core>=1.2.19",
     "langchain>=1.2.12",
+    "boto3>=1.42.70",
+    "unstructured[pdf]>=0.18.32",
 ]

@@ -10,6 +10,7 @@ from langchain_classic.chains.combine_documents import create_stuff_documents_ch
 from langchain_classic.chains.retrieval import create_retrieval_chain
 from langchain_mistralai.embeddings import MistralAIEmbeddings
 from langchain_deepseek import ChatDeepSeek
+from langchain_core.runnables.history import RunnableWithMessageHistory
 from .ingestion import ingest
 from typing import AsyncIterator, Any
 
@@ -72,8 +73,7 @@ class ChatService:
         ingest(vector_store, loader)
         # builds ConversationalRetrievalChain using the LLM and retriever
         retriever = vector_store.as_retriever(
-            search_type="similarity_score_threshold",
-            search_kwargs={"score_threshold": 0.8},
+            search_type="similarity", search_kwargs={"k": 3}
         )
         llm = ChatDeepSeek(
             model="deepseek-chat",
@@ -87,7 +87,7 @@ class ChatService:
             ]
         )
         history_aware_retriever = create_history_aware_retriever(
-            llm, retriver, contextualize_q_prompt
+            llm, retriever, contextualize_q_prompt
         )
         qa_prompt = ChatPromptTemplate.from_messages(
             [
