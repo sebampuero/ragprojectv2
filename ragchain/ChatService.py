@@ -1,0 +1,113 @@
+import asyncio
+from .config import settings
+from langchain_community.document_loaders import S3DirectoryLoader
+from langchain_community.chat_message_histories import RedisChatMessageHistory
+from langchain_chroma import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts.chat import MessagesPlaceholder
+from langchain_classic.chains.history_aware_retriever import create_history_aware_retriever
+from langchain_classic.chains.combine_documents import create_stuff_documents_chain
+from langchain_classic.chains.retrieval import create_retrieval_chain
+from langchain_mistralai.embeddings import MistralAIEmbeddings
+from langchain_deepseek import ChatDeepSeek
+from .ingestion import ingest
+from typing import AsyncIterator, Any
+
+contextualize_q_system_prompt = (
+    """
+    Given a chat history and the latest user question "
+    "which might reference context in the chat history, "
+    "formulate a standalone question which can be understood "
+    "without the chat history. Do NOT answer the question, "
+    "just reformulate it if needed and otherwise return it as is."
+    """
+)
+
+system_prompt = (
+    """
+    You are Sebastian answering questions about yourself with the given context. 
+    If the answer can't be answered with the given context, say you don't know. 
+    Use three sentences maximum and keep answers concise. 
+    Answer as if you were Sebastian using "I", not third person. 
+    Answer in german, english or spanish.
+    \n\n
+    Context: {context}
+    """
+)
+
+class ChatService:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
+    def __init__(self):
+        if getattr(self, "_initialized", False):
+            return
+        self.chain = self._build_chain()
+        self._initialized = True
+
+    def _build_chain(self):
+        def get_session_history(session_id: str) -> RedisChatMessageHistory:
+            return RedisChatMessageHistory(session_id, url=settings.REDIS_URL)
+        # create vector store
+        # create document loader
+        loader = S3DirectoryLoader(
+            bucket=settings.S3_BUCKET,
+            prefix=settings.S3_DOC_PREFIX,
+            aws_access_key_id=settings.S3_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.S3_SECRET_ACCESS_KEY
+        )
+        vector_store = Chroma(
+            collection_name=settings.VECTOR_STORE_COLLECTION_NAME,
+            embedding_function=MistralAIEmbeddings(
+                model=settings.MISTRAL_EMBED_MODEL,
+                api_key=settings.MISTRAL_API_KEY
+            ),
+        )
+        # calls ingest
+        ingest(vector_store, loader)
+        # builds ConversationalRetrievalChain using the LLM and retriever
+        retriever = vector_store.as_retriever(
+            search_type="similarity_score_threshold",
+            search_kwargs={"score_threshold": 0.8},
+        )
+        llm = ChatDeepSeek(
+            model="deepseek-chat",
+            api_key=settings.DEEPSEEK_API_KEY,
+        )
+        contextualize_q_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", contextualize_q_system_prompt),
+                MessagesPlaceholder("chat_history"),
+                ("human", "{input}"),
+            ]
+        )
+        history_aware_retriever = create_history_aware_retriever(
+            llm, retriver, contextualize_q_prompt
+        )
+        qa_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system_prompt),
+                MessagesPlaceholder("chat_history"),
+                ("human", "{input}"),
+            ]
+        )
+        question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
+        rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
+        self.conversational_rag_chain = RunnableWithMessageHistory(
+            rag_chain,
+            get_session_history,
+            input_messages_key="input",
+            history_messages_key="chat_history",
+            output_messages_key="answer",
+        )
+
+    async def astream_chat(self, session_id: str, user_input: str) -> AsyncIterator[Any]:
+        return self.conversational_rag_chain.astream({"input": user_input},
+                    config={
+                        "configurable": {"session_id": session_id}
+                    })

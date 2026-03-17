@@ -1,0 +1,18 @@
+[project]
+name = "ragchain"
+version = "0.1.0"
+description = "RAG application with LangChain"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic-settings",
+    "redis",
+    "langchain-community>=0.4.1",
+    "langchain-mistralai>=1.1.2",
+    "langchain-chroma>=1.1.0",
+    "langchain-deepseek>=1.0.1",
+    "langchain-core>=1.2.19",
+    "langchain>=1.2.12",
+]
