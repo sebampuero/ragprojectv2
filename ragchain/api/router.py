@@ -13,7 +13,7 @@ async def chat_streaming(
     service: Annotated[ChatService, Depends(get_chat_service)]
 ):
     async def build_json_response():
-        async for item in service.astream_chat(session_id=sessionId, user_input=user_input):
+        async for item in await service.astream_chat(session_id=sessionId, user_input=user_input):
             if 'answer' in item:
                 yield JSONResponse(content={
                     'type': 'chunk',
@@ -25,5 +25,5 @@ async def chat_streaming(
         }).body + b'\n'
     return StreamingResponse(
         build_json_response(), 
-        media_type="text/event-stream"
+        media_type="application/json"
     )

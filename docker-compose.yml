@@ -26,20 +26,27 @@ services:
       - MISTRAL_EMBED_MODEL=${MISTRAL_EMBED_MODEL:-mistral-embed}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - ROOT_LOG_LEVEL=${ROOT_LOG_LEVEL:-INFO}
+      - APP_LOG_LEVEL=${APP_LOG_LEVEL:-INFO}
     depends_on:
       - redis
 
   backend:
     build:
       context: ./backend
+    environment:
+      - RAGCHAIN_URL=http://ragchain:8000
     ports:
       - "8080:8080"
-
-  frontend:
-    build:
-      context: ./frontend
-    ports:
-      - "8080:8443" # nginx port for frontend
+    depends_on:
+      - ragchain
+  #frontend:
+  #  build:
+  #    context: ./frontend
+  #  ports:
+  #    - "8080:8443" # nginx port for frontend
+  # depends_on:
+  #    - backend
 
 volumes:
   redis_data:

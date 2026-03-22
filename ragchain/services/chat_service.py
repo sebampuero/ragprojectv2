@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from ragchain.core.config import settings
 from langchain_community.document_loaders import S3DirectoryLoader
 from langchain_community.chat_message_histories import RedisChatMessageHistory
@@ -13,6 +14,8 @@ from langchain_deepseek import ChatDeepSeek
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from ragchain.services.ingestion import ingest
 from typing import AsyncIterator, Any
+
+logger = logging.getLogger(__name__)
 
 contextualize_q_system_prompt = (
     """
@@ -43,12 +46,14 @@ class ChatService:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
+            logger.info("ChatService instance created")
         return cls._instance
 
     def __init__(self):
         if getattr(self, "_initialized", False):
             return
         self.chain = self._build_chain()
+        logger.info("ChatService chain built")
         self._initialized = True
 
     def _build_chain(self):
@@ -62,6 +67,7 @@ class ChatService:
             aws_access_key_id=settings.S3_ACCESS_KEY_ID,
             aws_secret_access_key=settings.S3_SECRET_ACCESS_KEY
         )
+        logger.debug(f"Using loader: {loader}")
         vector_store = Chroma(
             collection_name=settings.VECTOR_STORE_COLLECTION_NAME,
             embedding_function=MistralAIEmbeddings(
@@ -69,16 +75,19 @@ class ChatService:
                 api_key=settings.MISTRAL_API_KEY
             ),
         )
+        logger.debug(f"Using vector store: {vector_store}")
         # calls ingest
         ingest(vector_store, loader)
         # builds ConversationalRetrievalChain using the LLM and retriever
         retriever = vector_store.as_retriever(
             search_type="similarity", search_kwargs={"k": 3}
         )
+        logger.debug(f"Using retriever with config specs: {retriever.config_specs}")
         llm = ChatDeepSeek(
             model="deepseek-chat",
             api_key=settings.DEEPSEEK_API_KEY,
         )
+        logger.debug(f"Using LLM: {llm}")
         contextualize_q_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", contextualize_q_system_prompt),
@@ -105,8 +114,10 @@ class ChatService:
             history_messages_key="chat_history",
             output_messages_key="answer",
         )
+        logger.debug(f"Using conversational RAG chain with specs: {self.conversational_rag_chain.config_specs}")
 
     async def astream_chat(self, session_id: str, user_input: str) -> AsyncIterator[Any]:
+        logger.debug(f"Using session ID: {session_id} with input: {user_input}")
         return self.conversational_rag_chain.astream({"input": user_input},
                     config={
                         "configurable": {"session_id": session_id}

@@ -22,20 +22,23 @@ public class QueueService {
         return false;
     }
 
-    public void disconnect() {
-        setNextUserInQueueAsCurrent();
+    public String disconnect() {
+        return setNextUserInQueueAsCurrent();
     }
 
-    private void setNextUserInQueueAsCurrent() {
+    private String setNextUserInQueueAsCurrent() {
         String nextUser = userQueue.poll();
         if (nextUser != null) {
             log.info("Setting {} as current user", nextUser);
             currentUser.set(nextUser);
+        } else {
+            currentUser.set(null);
         }
+        return nextUser;
     }
 
-    public String removeFromQueue() {
-        return userQueue.poll();
+    public boolean removeFromQueue(String userId) {
+        return userQueue.remove(userId);
     }
 
     public String getCurrentUserID() {
