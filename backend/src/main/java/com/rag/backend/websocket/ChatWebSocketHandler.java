@@ -1,5 +1,7 @@
 package com.rag.backend.websocket;
 
+import com.rag.backend.service.EventService;
+import com.rag.backend.service.QueueService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -11,6 +13,14 @@ import java.net.URI;
 
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler {
+
+    private final EventService eventService;
+    private final QueueService queueService;
+
+    public ChatWebSocketHandler(EventService eventService, QueueService queueService) {
+        this.eventService = eventService;
+        this.queueService = queueService;
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
