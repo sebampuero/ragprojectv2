@@ -3,6 +3,7 @@ package com.rag.backend.controller;
 import com.rag.backend.enums.EventType;
 import com.rag.backend.service.EventService;
 import com.rag.backend.service.QueueService;
+import com.rag.backend.service.ChatTimerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,10 +18,12 @@ public class EventsController {
 
     private final EventService eventService;
     private final QueueService queueService;
+    private final ChatTimerService chatTimerService;
 
-    public EventsController(EventService eventService, QueueService queueService) {
+    public EventsController(EventService eventService, QueueService queueService, ChatTimerService chatTimerService) {
         this.eventService = eventService;
         this.queueService = queueService;
+        this.chatTimerService = chatTimerService;
     }
 
     @GetMapping("/events")
@@ -34,12 +37,13 @@ public class EventsController {
         eventService.subscribe(userId, emitter);
 
         if (queueService.getCurrentUserID() == null) {
+            queueService.setCurrentUserId(userId);
             eventService.notifyUser(userId, EventType.PROMOTED_CHAT);
-            queueService.tryConnect(userId);
+            chatTimerService.startTimer(userId);
             log.info("User {} was promoted to chat", userId);
         } else {
             eventService.notifyUser(userId, EventType.WAIT_IN_Q);
-            queueService.tryConnect(userId);
+            queueService.joinQueue(userId);
             log.info("User {} is waiting in queue", userId);
         }
 

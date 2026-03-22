@@ -3,6 +3,7 @@ package com.rag.backend.websocket;
 import com.rag.backend.enums.EventType;
 import com.rag.backend.service.EventService;
 import com.rag.backend.service.QueueService;
+import com.rag.backend.service.ChatTimerService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,15 +29,18 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final EventService eventService;
     private final QueueService queueService;
+    private final ChatTimerService chatTimerService;
     private final HttpClient httpClient;
     private final String ragchainUrl;
 
     public ChatWebSocketHandler(
             EventService eventService,
             QueueService queueService,
+            ChatTimerService chatTimerService,
             @Value("${ragchain.url:http://localhost:8000}") String ragchainUrl) {
         this.eventService = eventService;
         this.queueService = queueService;
+        this.chatTimerService = chatTimerService;
         this.ragchainUrl = ragchainUrl;
         this.httpClient = HttpClient.newHttpClient();
     }
@@ -77,6 +81,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
+        if (!userId.equals(queueService.getCurrentUserID())) {
+            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("User is not the current user"));
+            return;
+        }
+
         String userMessage = message.getPayload();
         String encodedMessage = URLEncoder.encode(userMessage, StandardCharsets.UTF_8);
         String url = ragchainUrl + "/chat/" + userId + "?user_input=" + encodedMessage;
@@ -109,11 +118,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String userId = (String) session.getAttributes().get("userId");
         if (userId != null) {
             log.info("WebSocket connection closed for user {}", userId);
-            String promotedUserId = queueService.disconnect();
+            chatTimerService.cancelTimer();
+            String promotedUserId = queueService.disconnect(userId);
             eventService.unsubscribe(userId);
             if (promotedUserId != null) {
                 log.info("Promoting user {}", promotedUserId);
                 eventService.notifyUser(promotedUserId, EventType.PROMOTED_CHAT);
+                chatTimerService.startTimer(promotedUserId);
             }
         }
     }

@@ -14,16 +14,19 @@ public class QueueService {
     private final Queue<String> userQueue = new ConcurrentLinkedQueue<>();
     private final AtomicReference<String> currentUser = new AtomicReference<>();
 
-    public boolean tryConnect(String userId) {
-        if (currentUser.get() == null) {
-            return currentUser.compareAndSet(null, userId);
-        }
-        userQueue.offer(userId);
-        return false;
+    public boolean setCurrentUserId(String userId) {
+        return currentUser.compareAndSet(null, userId);
     }
 
-    public String disconnect() {
-        return setNextUserInQueueAsCurrent();
+    public boolean joinQueue(String userId) {
+        return userQueue.offer(userId);
+    }
+
+    public String disconnect(String userId) {
+        if (userId.equals(currentUser.get())) {
+            return setNextUserInQueueAsCurrent();
+        }
+        return null;
     }
 
     private String setNextUserInQueueAsCurrent() {
