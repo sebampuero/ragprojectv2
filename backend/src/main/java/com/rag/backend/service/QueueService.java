@@ -58,4 +58,8 @@ public class QueueService {
     public boolean isUserConnected(String userId) {
         return userId.equals(currentUser.get());
     }
+
+    public int getQueueSize() {
+        return userQueue.size();
+    }
 }
