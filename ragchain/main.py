@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from ragchain.router import router
+from ragchain.api.router import router
 from contextlib import asynccontextmanager
-from ragchain.service import ChatService
+from ragchain.services.chat_service import ChatService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

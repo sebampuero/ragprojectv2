@@ -1,5 +1,5 @@
 import asyncio
-from .config import settings
+from ragchain.core.config import settings
 from langchain_community.document_loaders import S3DirectoryLoader
 from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain_chroma import Chroma
@@ -11,7 +11,7 @@ from langchain_classic.chains.retrieval import create_retrieval_chain
 from langchain_mistralai.embeddings import MistralAIEmbeddings
 from langchain_deepseek import ChatDeepSeek
 from langchain_core.runnables.history import RunnableWithMessageHistory
-from .ingestion import ingest
+from ragchain.services.ingestion import ingest
 from typing import AsyncIterator, Any
 
 contextualize_q_system_prompt = (

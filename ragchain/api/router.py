@@ -1,8 +1,8 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse, JSONResponse
-from ragchain.dependencies import get_chat_service
-from ragchain.service import ChatService
+from ragchain.api.dependencies import get_chat_service
+from ragchain.services.chat_service import ChatService
 
 router = APIRouter()
 

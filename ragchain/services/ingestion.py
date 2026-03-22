@@ -1,4 +1,4 @@
-from .config import settings
+from ragchain.core.config import settings
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 from langchain_core.document_loaders import BaseLoader
