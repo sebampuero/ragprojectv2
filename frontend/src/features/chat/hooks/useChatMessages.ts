@@ -22,13 +22,14 @@ export const useChatMessages = () => {
 
     useEffect(() => {
         const userId = localStorage.getItem('userId');
+        const WS_URL = import.meta.env.VITE_JAVA_BACKEND_WS;
         if (!userId) {
             console.error('No userId found in localStorage');
             navigate('/');
             return;
         }
 
-        const wsUrl = `ws://localhost:8080/websocket?userId=${userId}`;
+        const wsUrl = `${WS_URL}/websocket?userId=${userId}`;
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 

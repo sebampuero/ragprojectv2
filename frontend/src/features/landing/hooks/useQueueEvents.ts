@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const JAVA_BACKEND_URL = 'http://localhost:8080';
+const JAVA_BACKEND_URL = import.meta.env.VITE_JAVA_BACKEND_HTTP;
 
 const EventType = {
   PROMOTED_CHAT: 'PROMOTED_CHAT',

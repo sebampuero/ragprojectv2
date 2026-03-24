@@ -3,40 +3,22 @@ version: '3.8'
 services:
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
 
   ragchain:
     build:
       context: ./ragchain
-    ports:
-      - "8000:8000"
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-}
-      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-}
-      - S3_BUCKET=${S3_BUCKET:-}
-      - S3_REGION=${S3_REGION:-eu-central-1}
-      - S3_DOC_PREFIX=${S3_DOC_PREFIX:-doc}
-      - SPLITTER_CHUNK_SIZE=${SPLITTER_CHUNK_SIZE:-2000}
-      - SPLITTER_CHUNK_OVERLAP=${SPLITTER_CHUNK_OVERLAP:-200}
-      - VECTOR_STORE_COLLECTION_NAME=${VECTOR_STORE_COLLECTION_NAME:-}
-      - MISTRAL_EMBED_MODEL=${MISTRAL_EMBED_MODEL:-mistral-embed}
-      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
-      - ROOT_LOG_LEVEL=${ROOT_LOG_LEVEL:-INFO}
-      - APP_LOG_LEVEL=${APP_LOG_LEVEL:-INFO}
+    env_file:
+      - ./ragchain/.env
     depends_on:
       - redis
 
   backend:
     build:
       context: ./backend
-    environment:
-      - RAGCHAIN_URL=http://ragchain:8000
-      - CHAT_TIMEOUT_SECONDS=${CHAT_TIMEOUT_SECONDS}
+    env_file:
+      - ./backend/.env
     ports:
       - "8080:8080"
     depends_on:
