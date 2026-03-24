@@ -34,10 +34,10 @@ export const QueueArea = () => {
                     >
                         <VStack gap={2}>
                             <Text fontSize="sm" color="whiteAlpha.600" textTransform="uppercase" letterSpacing="widest">
-                                Users in Queue
+                                You are in the queue position:
                             </Text>
                             <Text fontSize="4xl" fontWeight="bold" color="white">
-                                {queueSize}
+                                {queueSize + 1}
                             </Text>
                             <Text fontSize="md" color="whiteAlpha.700">
                                 Please wait! LLMs can become expensive, only one user at a time can chat with

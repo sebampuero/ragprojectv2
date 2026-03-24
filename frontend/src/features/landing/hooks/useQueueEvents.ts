@@ -20,6 +20,19 @@ export const useQueueEvents = () => {
   useEffect(() => {
     const userId = crypto.randomUUID();
 
+    const fetchQueueSize = async () => {
+      try {
+        const response = await fetch(`${JAVA_BACKEND_URL}/queue/size`);
+        if (response.ok) {
+          const size = await response.json();
+          setQueueSize(size);
+        }
+      } catch (error) {
+        console.error('Failed to fetch queue size:', error);
+      }
+    };
+    fetchQueueSize();
+
     const eventSource = new EventSource(`${JAVA_BACKEND_URL}/events?userId=${userId}`);
     localStorage.setItem('userId', userId);
 

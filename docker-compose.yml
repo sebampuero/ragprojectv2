@@ -17,10 +17,10 @@ services:
       context: ./backend
     ports:
       - "8080:8080"
-    env_file:
-      - ./backend/.env
     depends_on:
       - ragchain
+    env_file:
+      - ./backend/.env
   frontend:
     build:
       context: ./frontend
