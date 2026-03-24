@@ -59,15 +59,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     session.getAttributes().put("userId", userId);
                     log.info("User connected: {}", userId);
                 } else {
-                    session.close(CloseStatus.NOT_ACCEPTABLE.withReason("User is not the current user"));
                     boolean removed = queueService.removeFromQueue(userId);
                     if (removed) {
                         log.info("User {} was removed from the queue", userId);
                     } else {
                         log.info("User {} was not in the queue", userId);
                     }
+                    session.sendMessage(new TextMessage(EventType.DEMOTED.name()));
+                    session.close(CloseStatus.NOT_ACCEPTABLE.withReason("User is not the current user"));
                 }
             } else {
+                session.sendMessage(new TextMessage(EventType.DEMOTED.name()));
                 session.close(CloseStatus.BAD_DATA.withReason("Missing userId"));
                 log.info("Missing userId for the Websocket connection");
             }
@@ -82,6 +84,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
 
         if (!userId.equals(queueService.getCurrentUserID())) {
+            session.sendMessage(new TextMessage(EventType.DEMOTED.name()));
             session.close(CloseStatus.NOT_ACCEPTABLE.withReason("User is not the current user"));
             return;
         }

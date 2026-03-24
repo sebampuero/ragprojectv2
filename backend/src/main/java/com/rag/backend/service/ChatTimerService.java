@@ -46,6 +46,7 @@ public class ChatTimerService {
             eventService.notifyUser(userId, EventType.DEMOTED);
 
             String nextUserId = queueService.disconnect(userId);
+            eventService.notifyAllUsers(EventType.QUEUE_SIZE, queueService.getQueueSize());
             if (nextUserId != null) {
                 log.info("Promoting user {} to chat after time expiration", nextUserId);
                 eventService.notifyUser(nextUserId, EventType.PROMOTED_CHAT);

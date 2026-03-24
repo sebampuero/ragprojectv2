@@ -41,13 +41,6 @@ services:
       - "8080:8080"
     depends_on:
       - ragchain
-  frontend:
-    build:
-      context: ./frontend
-    ports:
-      - "8080:8443" # nginx port for frontend
-    depends_on:
-      - backend
 
 volumes:
   redis_data:

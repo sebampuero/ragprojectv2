@@ -6,5 +6,6 @@ package com.rag.backend.enums;
 public enum EventType {
     PROMOTED_CHAT,
     WAIT_IN_Q,
-    DEMOTED
+    DEMOTED,
+    QUEUE_SIZE
 }

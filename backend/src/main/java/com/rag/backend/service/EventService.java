@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.rag.backend.enums.EventType;
+import com.rag.backend.dto.SseEventDTO;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,11 +28,25 @@ public class EventService {
     }
 
     public void notifyUser(String userId, EventType eventType) {
-        log.info("Notifying user: {} with event: {}", userId, eventType);
+        notifyUser(userId, eventType, null);
+    }
+
+    public void notifyAllUsers(EventType eventType, Object payload) {
+        for (String userId : emitterByUser.keySet()) {
+            notifyUser(userId, eventType, payload);
+        }
+    }
+
+    public void notifyUser(String userId, EventType eventType, Object payload) {
+        log.info("Notifying user: {} with event: {} and payload: {}", userId, eventType, payload);
         SseEmitter emitter = emitterByUser.get(userId);
         if (emitter != null) {
             try {
-                emitter.send(eventType.name());
+                SseEventDTO event = SseEventDTO.builder()
+                        .event_name(eventType.name())
+                        .payload(payload)
+                        .build();
+                emitter.send(event);
             } catch (Exception e) {
                 log.error("Failed to notify user: {}", userId, e);
             }
