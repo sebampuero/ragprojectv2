@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { EventType } from '../../../types/events';
-import { useNavigate } from 'react-router-dom';
 
 const JAVA_BACKEND_URL = import.meta.env.VITE_JAVA_BACKEND_HTTP;
 
@@ -8,7 +7,6 @@ const JAVA_BACKEND_URL = import.meta.env.VITE_JAVA_BACKEND_HTTP;
 export const useQueueEvents = () => {
   const [queueSize, setQueueSize] = useState<number>(0);
   const [isPromotedModalOpen, setIsPromotedModalOpen] = useState<boolean>(false);
-  const navigate = useNavigate();
 
   const onPromotedModalClose = () => {
     setIsPromotedModalOpen(false);
