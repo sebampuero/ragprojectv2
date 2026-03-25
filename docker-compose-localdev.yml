@@ -20,7 +20,7 @@ services:
     depends_on:
       - ragchain
     env_file:
-      - ./backend/.env
+      - ./backend/.env.development
     ports:
       - "8080:8080"
 

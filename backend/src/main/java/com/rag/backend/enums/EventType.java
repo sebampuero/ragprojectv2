@@ -7,5 +7,6 @@ public enum EventType {
     PROMOTED_CHAT,
     WAIT_IN_Q,
     DEMOTED,
-    QUEUE_SIZE
+    QUEUE_SIZE,
+    ALREADY_REGISTERED
 }

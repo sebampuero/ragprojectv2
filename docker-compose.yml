@@ -8,7 +8,7 @@ services:
     build:
       context: ./ragchain
     env_file:
-      - ./ragchain/.env
+      - ./ragchain/.env.production
     depends_on:
       - redis
 
@@ -20,7 +20,7 @@ services:
     depends_on:
       - ragchain
     env_file:
-      - ./backend/.env
+      - ./backend/.env.production
   frontend:
     build:
       context: ./frontend

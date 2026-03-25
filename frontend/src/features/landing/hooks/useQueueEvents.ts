@@ -1,24 +1,27 @@
 import { useState, useEffect } from 'react';
+import { EventType } from '../../../types/events';
+import { useNavigate } from 'react-router-dom';
 
 const JAVA_BACKEND_URL = import.meta.env.VITE_JAVA_BACKEND_HTTP;
 
-const EventType = {
-  PROMOTED_CHAT: 'PROMOTED_CHAT',
-  WAIT_IN_Q: 'WAIT_IN_Q',
-  DEMOTED: 'DEMOTED',
-  QUEUE_SIZE: 'QUEUE_SIZE'
-} as const;
 
 export const useQueueEvents = () => {
   const [queueSize, setQueueSize] = useState<number>(0);
   const [isPromotedModalOpen, setIsPromotedModalOpen] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   const onPromotedModalClose = () => {
     setIsPromotedModalOpen(false);
   };
 
   useEffect(() => {
-    const userId = crypto.randomUUID();
+
+    let userId = localStorage.getItem('userId');
+    if (!userId) {
+      userId = crypto.randomUUID();
+      localStorage.setItem('userId', userId);
+      console.log('New userId created:', userId);
+    }
 
     const fetchQueueSize = async () => {
       try {
@@ -34,7 +37,6 @@ export const useQueueEvents = () => {
     fetchQueueSize();
 
     const eventSource = new EventSource(`${JAVA_BACKEND_URL}/events?userId=${userId}`);
-    localStorage.setItem('userId', userId);
 
     eventSource.onmessage = (event) => {
       console.log('Received event:', event.data);
@@ -44,6 +46,11 @@ export const useQueueEvents = () => {
           setIsPromotedModalOpen(true);
         } else if (data.event_name === EventType.QUEUE_SIZE) {
           setQueueSize(data.payload);
+        } else if (data.event_name === EventType.WAIT_IN_Q) {
+          setQueueSize(data.payload);
+        } else if (data.event_name === EventType.ALREADY_REGISTERED) {
+          alert('You are already registered in the queue or chatting!');
+          eventSource.close();
         }
       } catch (e) {
         console.error('Failed to parse SSE event:', e);

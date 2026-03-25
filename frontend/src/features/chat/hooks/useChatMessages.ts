@@ -1,17 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { EventType } from '../../../types/events';
 
 export interface ChatMessage {
     content: string;
     isUser: boolean;
 }
 
-const EventType = {
-    PROMOTED_CHAT: 'PROMOTED_CHAT',
-    WAIT_IN_Q: 'WAIT_IN_Q',
-    DEMOTED: 'DEMOTED',
-    QUEUE_SIZE: 'QUEUE_SIZE'
-} as const;
 
 export const useChatMessages = () => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -70,11 +65,17 @@ export const useChatMessages = () => {
 
         ws.onerror = (error) => {
             console.error('WebSocket error:', error);
+            localStorage.removeItem('userId');
+            navigate('/');
         };
 
         ws.onclose = () => {
             setIsConnected(false);
             console.log('WebSocket disconnected');
+            localStorage.removeItem('userId');
+            navigate('/'); // TODO: the socket may close for many reasons, 
+            // and there should be a reconnect logic.
+            // will be handled later
         };
 
         return () => {

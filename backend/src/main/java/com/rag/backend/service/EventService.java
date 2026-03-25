@@ -27,6 +27,10 @@ public class EventService {
         emitterByUser.remove(userId);
     }
 
+    public SseEmitter getEmitter(String userId) {
+        return emitterByUser.get(userId);
+    }
+
     public void notifyUser(String userId, EventType eventType) {
         notifyUser(userId, eventType, null);
     }
@@ -38,7 +42,6 @@ public class EventService {
     }
 
     public void notifyUser(String userId, EventType eventType, Object payload) {
-        log.info("Notifying user: {} with event: {} and payload: {}", userId, eventType, payload);
         SseEmitter emitter = emitterByUser.get(userId);
         if (emitter != null) {
             try {
@@ -47,6 +50,7 @@ public class EventService {
                         .payload(payload)
                         .build();
                 emitter.send(event);
+                log.info("User {} notified with event: {} and payload: {}", userId, eventType, payload);
             } catch (Exception e) {
                 log.error("Failed to notify user: {}", userId, e);
             }
