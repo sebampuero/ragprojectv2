@@ -36,6 +36,7 @@ export const PromotedModal = ({
                         This RAG chat app works by answering questions about me. It uses Retrieval Augmented Generation
                         to fetch relevant information from my resume and other personal information and then uses a LLM to generate a response.
                         You can start chatting with me now, click on the button below.
+                        (This webapp is still under development, it's full of bugs!)
                     </Text>
 
                     <Button
