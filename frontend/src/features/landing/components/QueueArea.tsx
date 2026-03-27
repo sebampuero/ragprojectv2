@@ -3,7 +3,7 @@ import { useQueueEvents } from '../hooks/useQueueEvents';
 import { PromotedModal } from './PromotedModal';
 
 export const QueueArea = () => {
-    const { queueSize, isPromotedModalOpen, onPromotedModalClose } = useQueueEvents();
+    const { queueSize, isPromotedModalOpen } = useQueueEvents();
 
     return (
         <Box
@@ -47,7 +47,7 @@ export const QueueArea = () => {
                     </Box>
                 </VStack>
             </Container>
-            <PromotedModal isOpen={isPromotedModalOpen} onClose={onPromotedModalClose} />
+            <PromotedModal isOpen={isPromotedModalOpen} />
         </Box>
     );
 };

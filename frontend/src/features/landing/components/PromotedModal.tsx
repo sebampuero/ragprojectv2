@@ -3,10 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 export const PromotedModal = ({
     isOpen = true,
-    onClose,
 }: {
     isOpen?: boolean;
-    onClose?: () => void;
 }) => {
     const navigate = useNavigate();
 
@@ -20,7 +18,6 @@ export const PromotedModal = ({
             zIndex={1400}
             alignItems="center"
             justifyContent="center"
-            onClick={onClose}
         >
             <Box
                 backgroundColor="white"

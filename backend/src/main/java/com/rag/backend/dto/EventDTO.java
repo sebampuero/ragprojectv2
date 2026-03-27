@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SseEventDTO {
+public class EventDTO {
     private String event_name;
     private Object payload;
 }

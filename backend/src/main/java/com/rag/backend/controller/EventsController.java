@@ -1,10 +1,13 @@
 package com.rag.backend.controller;
 
 import com.rag.backend.enums.EventType;
-import com.rag.backend.service.EventService;
+import com.rag.backend.service.SseEventService;
 import com.rag.backend.service.QueueService;
-import com.rag.backend.service.ChatTimerService;
-import com.rag.backend.dto.SseEventDTO;
+import com.rag.backend.service.SessionManagerService;
+import com.rag.backend.dto.EventDTO;
+
+import java.io.IOException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,14 +20,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EventsController {
 
-    private final EventService eventService;
-    private final QueueService queueService;
-    private final ChatTimerService chatTimerService;
+    private final SseEventService eventService;
+    private final SessionManagerService sessionManagerService;
 
-    public EventsController(EventService eventService, QueueService queueService, ChatTimerService chatTimerService) {
+    public EventsController(SseEventService eventService, SessionManagerService sessionManagerService) {
         this.eventService = eventService;
-        this.queueService = queueService;
-        this.chatTimerService = chatTimerService;
+        this.sessionManagerService = sessionManagerService;
     }
 
     @GetMapping("/events")
@@ -33,36 +34,26 @@ public class EventsController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        SseEmitter existingEmitter = eventService.getEmitter(userId);
-        if (existingEmitter != null) {
-            log.info("User {} is already subscribed to events", userId);
-            SseEmitter rejectEmitter = new SseEmitter(0L);
+        if (eventService.getEmitter(userId) != null) {
+            eventService.notifyUser(userId, EventType.WAITING);
+            // return a new emitter that sends a single message ALREADY_CONNECTED and then
+            // closes, this would happen in a new tab
+            SseEmitter emitter = new SseEmitter(0L);
             try {
-                rejectEmitter.send(SseEventDTO.builder()
-                        .event_name(EventType.ALREADY_REGISTERED.name())
-                        .payload(null)
-                        .build());
-                rejectEmitter.complete();
-            } catch (Exception e) {
-                log.error("Failed to send ALREADY_REGISTERED event", e);
+                emitter.send(EventType.ALREADY_CONNECTED);
+            } catch (IOException e) {
+                log.error("Failed to send ALREADY_CONNECTED event to user {}", userId, e);
             }
-            return ResponseEntity.ok(rejectEmitter);
+            emitter.complete();
+            return ResponseEntity.ok(emitter);
         }
 
-        SseEmitter emitter = new SseEmitter(0L); // No timeout
+        SseEmitter emitter = new SseEmitter(0L);
 
-        eventService.subscribe(userId, emitter);
-
-        if (queueService.getCurrentUserID() == null) {
-            queueService.setCurrentUserId(userId);
-            eventService.notifyUser(userId, EventType.PROMOTED_CHAT);
-            chatTimerService.startTimer(userId);
-            log.info("User {} was promoted to chat", userId);
+        if (sessionManagerService.getActiveSession() == null) {
+            sessionManagerService.promoteUser(userId, emitter);
         } else {
-            eventService.notifyUser(userId, EventType.WAIT_IN_Q);
-            eventService.notifyAllUsers(EventType.QUEUE_SIZE, queueService.getQueueSize());
-            queueService.joinQueue(userId);
-            log.info("User {} is waiting in queue", userId);
+            sessionManagerService.addToWaitingList(userId, emitter);
         }
 
         emitter.onCompletion(() -> {

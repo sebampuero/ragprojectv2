@@ -40,6 +40,8 @@ export const useChatMessages = () => {
 
             if (chunk === EventType.DEMOTED) {
                 alert("Your session expired!")
+                localStorage.removeItem('userId');
+                ws.close();
                 navigate('/');
                 return;
             }

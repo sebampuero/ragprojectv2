@@ -1,9 +1,10 @@
 package com.rag.backend.websocket;
 
 import com.rag.backend.enums.EventType;
-import com.rag.backend.service.EventService;
+import com.rag.backend.models.ActiveSession;
+import com.rag.backend.service.SseEventService;
 import com.rag.backend.service.QueueService;
-import com.rag.backend.service.ChatTimerService;
+import com.rag.backend.service.SessionManagerService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,20 +28,14 @@ import java.util.stream.Stream;
 @Slf4j
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
-    private final EventService eventService;
-    private final QueueService queueService;
-    private final ChatTimerService chatTimerService;
+    private final SessionManagerService sessionManagerService;
     private final HttpClient httpClient;
     private final String ragchainUrl;
 
     public ChatWebSocketHandler(
-            EventService eventService,
-            QueueService queueService,
-            ChatTimerService chatTimerService,
+            SessionManagerService sessionManagerService,
             @Value("${ragchain.url:http://localhost:8000}") String ragchainUrl) {
-        this.eventService = eventService;
-        this.queueService = queueService;
-        this.chatTimerService = chatTimerService;
+        this.sessionManagerService = sessionManagerService;
         this.ragchainUrl = ragchainUrl;
         this.httpClient = HttpClient.newHttpClient();
     }
@@ -55,21 +50,24 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     .getFirst("userId");
 
             if (userId != null) {
-                if (queueService.isUserConnected(userId)) {
+                ActiveSession activeSession = sessionManagerService.getActiveSession();
+                if (activeSession != null && activeSession.getUserId().equals(userId)) {
                     session.getAttributes().put("userId", userId);
-                    log.info("User connected: {}", userId);
-                } else {
-                    boolean removed = queueService.removeFromQueue(userId);
-                    if (removed) {
-                        log.info("User {} was removed from the queue", userId);
-                    } else {
-                        log.info("User {} was not in the queue", userId);
+                    WebSocketSession oldSession = activeSession.getWebSocketSession();
+                    if (oldSession != null) {
+                        try {
+                            oldSession.close();
+                        } catch (Exception e) {
+                            log.error("Failed to close old WebSocket session for user: {}", userId, e);
+                        }
                     }
-                    session.sendMessage(new TextMessage(EventType.DEMOTED.name()));
+                    activeSession.setWebSocketSession(session);
+                    log.info("User {} connected: {}", userId, session);
+                } else {
                     session.close(CloseStatus.NOT_ACCEPTABLE.withReason("User is not the current user"));
+                    log.info("User {} is not the current user", userId);
                 }
             } else {
-                session.sendMessage(new TextMessage(EventType.DEMOTED.name()));
                 session.close(CloseStatus.BAD_DATA.withReason("Missing userId"));
                 log.info("Missing userId for the Websocket connection");
             }
@@ -83,7 +81,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        if (!userId.equals(queueService.getCurrentUserID())) {
+        if (sessionManagerService.getActiveSession() == null
+                || !userId.equals(sessionManagerService.getActiveSession().getUserId())) {
             session.sendMessage(new TextMessage(EventType.DEMOTED.name()));
             session.close(CloseStatus.NOT_ACCEPTABLE.withReason("User is not the current user"));
             return;
@@ -120,15 +119,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         String userId = (String) session.getAttributes().get("userId");
         if (userId != null) {
-            log.info("WebSocket connection closed for user {}", userId);
-            chatTimerService.cancelTimer();
-            String promotedUserId = queueService.disconnect(userId);
-            eventService.unsubscribe(userId);
-            if (promotedUserId != null) {
-                log.info("Promoting user {}", promotedUserId);
-                eventService.notifyUser(promotedUserId, EventType.PROMOTED_CHAT);
-                chatTimerService.startTimer(promotedUserId);
-            }
+            log.info("WebSocket connection closed for user {} with status {}", userId, status);
+            sessionManagerService.demoteUser(userId);
         }
     }
 }

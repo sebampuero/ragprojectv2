@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.rag.backend.enums.EventType;
-import com.rag.backend.dto.SseEventDTO;
+import com.rag.backend.dto.EventDTO;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,7 +13,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Service
 @Slf4j
-public class EventService {
+public class SseEventService {
 
     private final Map<String, SseEmitter> emitterByUser = new ConcurrentHashMap<>();
 
@@ -45,7 +45,7 @@ public class EventService {
         SseEmitter emitter = emitterByUser.get(userId);
         if (emitter != null) {
             try {
-                SseEventDTO event = SseEventDTO.builder()
+                EventDTO event = EventDTO.builder()
                         .event_name(eventType.name())
                         .payload(payload)
                         .build();
