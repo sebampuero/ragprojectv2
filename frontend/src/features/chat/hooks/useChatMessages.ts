@@ -41,7 +41,6 @@ export const useChatMessages = () => {
             if (chunk === EventType.DEMOTED) {
                 alert("Your session expired!")
                 localStorage.removeItem('userId');
-                ws.close();
                 navigate('/');
                 return;
             }
@@ -71,9 +70,13 @@ export const useChatMessages = () => {
             navigate('/');
         };
 
-        ws.onclose = () => {
+        ws.onclose = (event) => {
             setIsConnected(false);
             console.log('WebSocket disconnected');
+            if (event.code === 4001) {
+                alert("Your chat was resumed in another tab.");
+                return;
+            }
             localStorage.removeItem('userId');
             navigate('/'); // TODO: the socket may close for many reasons, 
             // and there should be a reconnect logic.

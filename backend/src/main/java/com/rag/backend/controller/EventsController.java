@@ -34,20 +34,6 @@ public class EventsController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        if (eventService.getEmitter(userId) != null) {
-            eventService.notifyUser(userId, EventType.WAITING);
-            // return a new emitter that sends a single message ALREADY_CONNECTED and then
-            // closes, this would happen in a new tab
-            SseEmitter emitter = new SseEmitter(0L);
-            try {
-                emitter.send(EventType.ALREADY_CONNECTED);
-            } catch (IOException e) {
-                log.error("Failed to send ALREADY_CONNECTED event to user {}", userId, e);
-            }
-            emitter.complete();
-            return ResponseEntity.ok(emitter);
-        }
-
         SseEmitter emitter = new SseEmitter(0L);
 
         if (sessionManagerService.getActiveSession() == null) {

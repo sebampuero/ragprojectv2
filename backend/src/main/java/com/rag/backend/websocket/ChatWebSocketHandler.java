@@ -2,8 +2,6 @@ package com.rag.backend.websocket;
 
 import com.rag.backend.enums.EventType;
 import com.rag.backend.models.ActiveSession;
-import com.rag.backend.service.SseEventService;
-import com.rag.backend.service.QueueService;
 import com.rag.backend.service.SessionManagerService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +54,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     WebSocketSession oldSession = activeSession.getWebSocketSession();
                     if (oldSession != null) {
                         try {
-                            oldSession.close();
+                            oldSession.close(new CloseStatus(4001, "Connection opened in another tab"));
                         } catch (Exception e) {
                             log.error("Failed to close old WebSocket session for user: {}", userId, e);
                         }
@@ -117,10 +115,16 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+        if (status.getCode() == 4001) {
+            log.info("WebSocket connection closed for user {} with status {}", session.getAttributes().get("userId"),
+                    status);
+            return;
+        }
         String userId = (String) session.getAttributes().get("userId");
         if (userId != null) {
             log.info("WebSocket connection closed for user {} with status {}", userId, status);
             sessionManagerService.demoteUser(userId);
+            sessionManagerService.promoteNextUserInQueue();
         }
     }
 }
