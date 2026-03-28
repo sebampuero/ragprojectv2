@@ -37,6 +37,7 @@ public class SessionManagerService {
     }
 
     public void removeWaitingUser(String userId, SseEmitter emitter) {
+        log.info("Removing user {} from waiting list.", userId);
         if (queueService.isUserInQueue(userId)) {
             sseEventService.notifyAllUsers(EventType.QUEUE_SIZE, queueService.getQueueSize());
             queueService.removeFromQueue(userId);
@@ -57,6 +58,7 @@ public class SessionManagerService {
         String nextUserId = queueService.getNextUserInQueue();
         sseEventService.notifyAllUsers(EventType.QUEUE_SIZE, queueService.getQueueSize());
         if (nextUserId != null) {
+            log.info("Promoting next user {} from waiting list.", nextUserId);
             SseEmitter emitter = sseEventService.getEmitter(nextUserId);
 
             if (emitter != null) {
@@ -64,7 +66,7 @@ public class SessionManagerService {
                     sseEventService.throwyNotifyUser(nextUserId, EventType.PING, null);
                     promoteUser(nextUserId, emitter);
                 } catch (Exception e) {
-                    log.info("The emitter for user {} is dead, promoting next user in queue.", nextUserId);
+                    log.info("The SSE emitter for user {} is dead, promoting next user in queue.", nextUserId);
                     promoteNextUserInQueue();
                 }
             } else {
@@ -73,7 +75,7 @@ public class SessionManagerService {
                 // but the emitter existed. If the emitter is null, it means the user left the
                 // waiting queue
                 // and we won't promote ghost users
-                log.info("User {} disconnected while waiting. Skipping to next.", nextUserId);
+                log.info("User {} had no SSE emitter, promoting next user in queue.", nextUserId);
                 promoteNextUserInQueue();
             }
         }
@@ -83,6 +85,7 @@ public class SessionManagerService {
         if (sseEventService.getEmitter(userId) == null) {
             sseEventService.subscribe(userId, emitter);
         }
+        log.info("Promoting user {} to active session.", userId);
         Runnable expirationTask = () -> {
             log.info("Session timeout reached for user: {}", userId);
             demoteUser(userId);
@@ -110,12 +113,7 @@ public class SessionManagerService {
     }
 
     public void demoteUser(String userId) {
-        sseEventService.notifyUser(userId, EventType.DEMOTED);
-        SseEmitter emitter = sseEventService.getEmitter(userId);
-        if (emitter != null) {
-            sseEventService.unsubscribe(userId, emitter);
-        }
-
+        log.info("Demoting user {}", userId);
         ActiveSession current = activeSessionRef.get();
         if (current != null && current.getUserId().equals(userId)) {
             current.cancelTimer();
@@ -127,6 +125,7 @@ public class SessionManagerService {
                 log.error("Failed to close WebSocket session for user: {}", userId, e);
             }
             activeSessionRef.compareAndSet(current, null);
+            log.info("User {} demoted from active session.", userId);
         }
     }
 
@@ -137,6 +136,7 @@ public class SessionManagerService {
         sseEventService.subscribe(userId, emitter);
         sseEventService.notifyUser(userId, EventType.WAIT_IN_Q);
         sseEventService.notifyAllUsers(EventType.QUEUE_SIZE, queueService.getQueueSize());
+        log.info("User {} added to waiting list.", userId);
     }
 
     public boolean isInQueue(String userId) {

@@ -20,7 +20,6 @@ public class SseEventService {
     private final Map<String, SseEmitter> emitterByUser = new ConcurrentHashMap<>();
 
     public void subscribe(String userId, SseEmitter emitter) {
-        log.info("User subscribed: {}", userId);
         emitterByUser.put(userId, emitter);
     }
 
@@ -51,7 +50,6 @@ public class SseEventService {
                         .payload(payload)
                         .build();
                 emitter.send(event);
-                log.info("User {} notified with event: {} and payload: {}", userId, eventType, payload);
             } catch (Exception e) {
                 log.error("Failed to notify user: {}", userId, e);
             }

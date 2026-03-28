@@ -33,7 +33,8 @@ public class SessionController {
             log.info("User {} is already in queue. Invalidating session.", userId);
             sessionManagerService.removeWaitingUser(userId);
         }
-
-        return EventDTO.builder().event_name(EventType.NEW.name()).payload(UUID.randomUUID().toString()).build();
+        String newUserId = UUID.randomUUID().toString();
+        log.info("Generating new session userID: {}", newUserId);
+        return EventDTO.builder().event_name(EventType.NEW.name()).payload(newUserId).build();
     }
 }

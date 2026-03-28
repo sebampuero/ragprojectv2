@@ -1,11 +1,6 @@
 package com.rag.backend.controller;
 
-import com.rag.backend.service.SseEventService;
-import com.rag.backend.service.QueueService;
 import com.rag.backend.service.SessionManagerService;
-import com.rag.backend.dto.EventDTO;
-
-import java.io.IOException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,17 +14,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EventsController {
 
-    private final SseEventService eventService;
     private final SessionManagerService sessionManagerService;
 
-    public EventsController(SseEventService eventService, SessionManagerService sessionManagerService) {
-        this.eventService = eventService;
+    public EventsController(SessionManagerService sessionManagerService) {
         this.sessionManagerService = sessionManagerService;
     }
 
     @GetMapping("/events")
     public ResponseEntity<SseEmitter> subscribeToEvents(@RequestParam String userId) {
         if (userId.trim().isEmpty()) {
+            log.warn("Empty userId provided for events subscription.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
