@@ -1,6 +1,5 @@
 package com.rag.backend.controller;
 
-import com.rag.backend.enums.EventType;
 import com.rag.backend.service.SseEventService;
 import com.rag.backend.service.QueueService;
 import com.rag.backend.service.SessionManagerService;
@@ -34,27 +33,26 @@ public class EventsController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        SseEmitter emitter = new SseEmitter(0L);
+        SseEmitter newEmitter = new SseEmitter(0L);
+
+        newEmitter.onCompletion(() -> {
+            log.info("User {} unsubscribed, emitter completed", userId);
+            sessionManagerService.removeWaitingUser(userId, newEmitter);
+        });
+        newEmitter.onTimeout(() -> {
+            log.info("User {} unsubscribed, emitter timeout", userId);
+            sessionManagerService.removeWaitingUser(userId, newEmitter);
+        });
+        newEmitter.onError((ex) -> {
+            log.info("User {} unsubscribed, emitter error", userId);
+            sessionManagerService.removeWaitingUser(userId, newEmitter);
+        });
 
         if (sessionManagerService.getActiveSession() == null) {
-            sessionManagerService.promoteUser(userId, emitter);
+            sessionManagerService.promoteUser(userId, newEmitter);
         } else {
-            sessionManagerService.addToWaitingList(userId, emitter);
+            sessionManagerService.addToWaitingList(userId, newEmitter);
         }
-
-        emitter.onCompletion(() -> {
-            log.info("User {} unsubscribed, emitter completed", userId);
-            eventService.unsubscribe(userId);
-        });
-        emitter.onTimeout(() -> {
-            log.info("User {} unsubscribed, emitter timeout", userId);
-            eventService.unsubscribe(userId);
-        });
-        emitter.onError((ex) -> {
-            log.info("User {} unsubscribed, emitter error, {} ", userId, ex);
-            eventService.unsubscribe(userId);
-        });
-
-        return ResponseEntity.ok(emitter);
+        return ResponseEntity.ok(newEmitter);
     }
 }

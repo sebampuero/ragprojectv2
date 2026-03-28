@@ -11,5 +11,6 @@ public enum EventType {
     QUEUE_SIZE,
     CHATTING,
     WAITING,
-    NEW
+    NEW,
+    PING
 }

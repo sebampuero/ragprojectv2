@@ -37,7 +37,7 @@ export const QueueArea = () => {
                                 You are in the queue position:
                             </Text>
                             <Text fontSize="4xl" fontWeight="bold" color="white">
-                                {queueSize + 1}
+                                {queueSize}
                             </Text>
                             <Text fontSize="md" color="whiteAlpha.700">
                                 Please wait! LLMs can become expensive, only one user at a time can chat with

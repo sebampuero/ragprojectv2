@@ -36,6 +36,19 @@ public class SessionManagerService {
         return activeSessionRef.get();
     }
 
+    public void removeWaitingUser(String userId, SseEmitter emitter) {
+        if (queueService.isUserInQueue(userId)) {
+            sseEventService.notifyAllUsers(EventType.QUEUE_SIZE, queueService.getQueueSize());
+            queueService.removeFromQueue(userId);
+            sseEventService.unsubscribe(userId, emitter);
+        }
+    }
+
+    public void removeWaitingUser(String userId) {
+        SseEmitter emitter = sseEventService.getEmitter(userId);
+        removeWaitingUser(userId, emitter);
+    }
+
     public void promoteNextUserInQueue() {
         if (activeSessionRef.get() != null) {
             return;
@@ -45,9 +58,15 @@ public class SessionManagerService {
         sseEventService.notifyAllUsers(EventType.QUEUE_SIZE, queueService.getQueueSize());
         if (nextUserId != null) {
             SseEmitter emitter = sseEventService.getEmitter(nextUserId);
+
             if (emitter != null) {
-                log.info("Promoting user {} to active session.", nextUserId);
-                promoteUser(nextUserId, emitter);
+                try {
+                    sseEventService.throwyNotifyUser(nextUserId, EventType.PING, null);
+                    promoteUser(nextUserId, emitter);
+                } catch (Exception e) {
+                    log.info("The emitter for user {} is dead, promoting next user in queue.", nextUserId);
+                    promoteNextUserInQueue();
+                }
             } else {
                 // lazy eviction, one user disconnected while waiting and may have been left in
                 // the queue
@@ -61,7 +80,9 @@ public class SessionManagerService {
     }
 
     public void promoteUser(String userId, SseEmitter emitter) {
-        sseEventService.subscribe(userId, emitter);
+        if (sseEventService.getEmitter(userId) == null) {
+            sseEventService.subscribe(userId, emitter);
+        }
         Runnable expirationTask = () -> {
             log.info("Session timeout reached for user: {}", userId);
             demoteUser(userId);
@@ -78,6 +99,8 @@ public class SessionManagerService {
         if (activeSessionRef.compareAndSet(null, newSession)) {
             log.info("User {} successfully promoted to active session.", userId);
             sseEventService.notifyUser(userId, EventType.PROMOTED_CHAT);
+            // promoted user does not need events anymore
+            sseEventService.unsubscribe(userId, emitter);
         } else {
             future.cancel(false);
             log.warn("Failed to promote user {}: Another session is currently active.", userId);
@@ -88,7 +111,10 @@ public class SessionManagerService {
 
     public void demoteUser(String userId) {
         sseEventService.notifyUser(userId, EventType.DEMOTED);
-        sseEventService.unsubscribe(userId);
+        SseEmitter emitter = sseEventService.getEmitter(userId);
+        if (emitter != null) {
+            sseEventService.unsubscribe(userId, emitter);
+        }
 
         ActiveSession current = activeSessionRef.get();
         if (current != null && current.getUserId().equals(userId)) {
@@ -105,8 +131,15 @@ public class SessionManagerService {
     }
 
     public void addToWaitingList(String userId, SseEmitter emitter) {
-        queueService.joinQueue(userId);
+        if (!queueService.isUserInQueue(userId)) {
+            queueService.joinQueue(userId);
+        }
         sseEventService.subscribe(userId, emitter);
         sseEventService.notifyUser(userId, EventType.WAIT_IN_Q);
+        sseEventService.notifyAllUsers(EventType.QUEUE_SIZE, queueService.getQueueSize());
+    }
+
+    public boolean isInQueue(String userId) {
+        return queueService.isUserInQueue(userId);
     }
 }

@@ -84,6 +84,7 @@ export const useChatMessages = () => {
         };
 
         return () => {
+            console.log("Unmounting useChatMessages")
             if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
                 ws.close();
             }

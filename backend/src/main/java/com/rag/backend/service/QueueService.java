@@ -31,4 +31,8 @@ public class QueueService {
     public int getQueueSize() {
         return userQueue.size();
     }
+
+    public boolean isUserInQueue(String userId) {
+        return userQueue.contains(userId);
+    }
 }
