@@ -13,6 +13,8 @@ services:
       - ./ragchain/.env.production
     depends_on:
       - redis
+    volumes:
+      - chroma_data:/app/chroma
 
   ragchain-worker:
     build:
@@ -22,6 +24,8 @@ services:
       - ./ragchain/.env.production
     depends_on:
       - redis
+    volumes:
+      - chroma_data:/app/chroma
 
   ragchain-beat:
     build:
@@ -54,3 +58,4 @@ services:
 
 volumes:
   redis_data:
+  chroma_data:

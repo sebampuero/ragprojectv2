@@ -16,6 +16,7 @@ def refresh_rag_documents():
     )
     vector_store = Chroma(
         collection_name=settings.VECTOR_STORE_COLLECTION_NAME,
+        persist_directory=settings.CHROMA_PERSIST_DIRECTORY,
         embedding_function=MistralAIEmbeddings(
             model=settings.MISTRAL_EMBED_MODEL,
             api_key=settings.MISTRAL_API_KEY

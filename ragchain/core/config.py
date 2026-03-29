@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     SPLITTER_CHUNK_SIZE: int = 2000
     SPLITTER_CHUNK_OVERLAP: int = 200
+    CHROMA_PERSIST_DIRECTORY: str
 
     VECTOR_STORE_COLLECTION_NAME: str
 
