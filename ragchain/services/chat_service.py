@@ -1,17 +1,16 @@
 import logging
 from ragchain.core.config import settings
-from langchain_community.document_loaders import S3DirectoryLoader
 from langchain_community.chat_message_histories import RedisChatMessageHistory
-from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompts.chat import MessagesPlaceholder
 from langchain_classic.chains.history_aware_retriever import create_history_aware_retriever
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 from langchain_classic.chains.retrieval import create_retrieval_chain
-from langchain_mistralai.embeddings import MistralAIEmbeddings
 from langchain_deepseek import ChatDeepSeek
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from ragchain.services.ingestion import ingest
+from ragchain.core.vector_store import get_vector_store
+from ragchain.core.document_loader import get_document_loader
 from typing import AsyncIterator, Any
 
 logger = logging.getLogger(__name__)

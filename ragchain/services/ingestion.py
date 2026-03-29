@@ -9,9 +9,6 @@ logger = logging.getLogger(__name__)
 def ingest(vector_store: VectorStore, loader: BaseLoader):
     logger.debug(f"Using loader: {loader} and vector store: {vector_store}")
 
-    vector_store.delete()
-    logger.debug("Deleted all documents from vector store")
-
     docs = loader.load()
     logger.debug(f"Loaded {len(docs)} documents")
 
@@ -20,10 +17,24 @@ def ingest(vector_store: VectorStore, loader: BaseLoader):
         chunk_overlap=settings.SPLITTER_CHUNK_OVERLAP,
         add_start_index=True,
     )
-    logger.debug(f"Using text splitter: {text_splitter}")
 
-    all_splits = text_splitter.split_documents(docs)
-    logger.debug(f"Split into {len(all_splits)} chunks")
+    all_splits = []
+    all_ids = []
 
-    vector_store.add_documents(documents=all_splits)
-    logger.debug(f"Added {len(all_splits)} documents to vector store")
+    for doc in docs:
+        source = doc.metadata.get("source")
+        if not source:
+            raise ValueError("Document metadata must include 'source'")
+
+        splits = text_splitter.split_documents([doc])
+
+        for i, split in enumerate(splits):
+            split.metadata["source"] = source
+            all_splits.append(split)
+            all_ids.append(f"{source}::{i}")
+
+    vector_store.delete(ids=all_ids)
+    logger.debug(f"Deleted {len(all_ids)} existing chunk IDs")
+
+    vector_store.add_documents(documents=all_splits, ids=all_ids)
+    logger.debug(f"Added {len(all_splits)} chunks to vector store")
