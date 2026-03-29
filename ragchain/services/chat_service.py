@@ -58,27 +58,10 @@ class ChatService:
     def _build_chain(self):
         def get_session_history(session_id: str) -> RedisChatMessageHistory:
             return RedisChatMessageHistory(session_id, url=settings.REDIS_URL)
-        # create vector store
-        # create document loader
-        loader = S3DirectoryLoader(
-            bucket=settings.S3_BUCKET,
-            prefix=settings.S3_DOC_PREFIX,
-            aws_access_key_id=settings.S3_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.S3_SECRET_ACCESS_KEY
-        )
-        logger.debug(f"Using loader: {loader}")
-        vector_store = Chroma(
-            collection_name=settings.VECTOR_STORE_COLLECTION_NAME,
-            persist_directory=settings.CHROMA_PERSIST_DIRECTORY,
-            embedding_function=MistralAIEmbeddings(
-                model=settings.MISTRAL_EMBED_MODEL,
-                api_key=settings.MISTRAL_API_KEY
-            ),
-        )
-        logger.debug(f"Using vector store: {vector_store}")
-        # calls ingest
+
+        loader = get_document_loader()
+        vector_store = get_vector_store()
         ingest(vector_store, loader)
-        # builds ConversationalRetrievalChain using the LLM and retriever
         retriever = vector_store.as_retriever(
             search_type="similarity", search_kwargs={"k": 3}
         )
