@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /app && chown -R 1000:1000 /app
 WORKDIR /app
 
+RUN mkdir -p /data/chroma && chown -R 1000:1000 /data/chroma
+
 USER 1000
 
 ENV UV_COMPILE_BYTECODE=1
