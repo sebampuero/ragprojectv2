@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     LOG_DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
+    BEAT_SCHEDULE_REFRESH_RAG_DOCUMENTS_EVERY_SECONDS: int = 60 * 60 * 24
+
     SPLITTER_CHUNK_SIZE: int = 2000
     SPLITTER_CHUNK_OVERLAP: int = 200
 

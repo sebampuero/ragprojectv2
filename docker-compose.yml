@@ -5,10 +5,28 @@ services:
     volumes:
       - redis_data:/data
 
-  ragchain:
+  ragchain-api:
     build:
       context: ./ragchain
     restart: unless-stopped
+    env_file:
+      - ./ragchain/.env.production
+    depends_on:
+      - redis
+
+  ragchain-worker:
+    build:
+      context: ./ragchain
+    command: celery -A ragchain.core.celery_app.celery_app worker --loglevel=INFO
+    env_file:
+      - ./ragchain/.env.production
+    depends_on:
+      - redis
+
+  ragchain-beat:
+    build:
+      context: ./ragchain
+    command: celery -A ragchain.core.celery_app.celery_app beat --loglevel=INFO
     env_file:
       - ./ragchain/.env.production
     depends_on:
@@ -21,9 +39,10 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - ragchain
+      - ragchain-api
     env_file:
       - ./backend/.env.production
+
   frontend:
     build:
       context: ./frontend

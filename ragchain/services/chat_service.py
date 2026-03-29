@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from ragchain.core.config import settings
 from langchain_community.document_loaders import S3DirectoryLoader

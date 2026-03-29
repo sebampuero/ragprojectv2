@@ -1,14 +1,32 @@
-version: '3.8'
-
 services:
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     volumes:
       - redis_data:/data
 
-  ragchain:
+  ragchain-api:
     build:
       context: ./ragchain
+    restart: unless-stopped
+    env_file:
+      - ./ragchain/.env
+    depends_on:
+      - redis
+
+  ragchain-worker:
+    build:
+      context: ./ragchain
+    command: celery -A ragchain.core.celery_app.celery_app worker --loglevel=INFO
+    env_file:
+      - ./ragchain/.env
+    depends_on:
+      - redis
+
+  ragchain-beat:
+    build:
+      context: ./ragchain
+    command: celery -A ragchain.core.celery_app.celery_app beat --loglevel=INFO
     env_file:
       - ./ragchain/.env
     depends_on:
@@ -17,12 +35,13 @@ services:
   backend:
     build:
       context: ./backend
-    depends_on:
-      - ragchain
-    env_file:
-      - ./backend/.env.development
+    restart: unless-stopped
     ports:
       - "8080:8080"
+    depends_on:
+      - ragchain-api
+    env_file:
+      - ./backend/.env.development
 
 volumes:
   redis_data:

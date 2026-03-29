@@ -17,4 +17,5 @@ dependencies = [
     "langchain>=1.2.12",
     "boto3>=1.42.70",
     "unstructured[pdf]>=0.18.32",
+    "celery>=5.6.3",
 ]
