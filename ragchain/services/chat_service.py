@@ -68,7 +68,7 @@ class ChatService:
         llm = ChatDeepSeek(
             model="deepseek-chat",
             api_key=settings.DEEPSEEK_API_KEY,
-        )
+        ) # TODO: Do not hardcode DeepSeek here
         logger.debug(f"Using LLM: {llm}")
         contextualize_q_prompt = ChatPromptTemplate.from_messages(
             [

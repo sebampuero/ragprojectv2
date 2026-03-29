@@ -2,6 +2,11 @@ from langchain_chroma import Chroma
 from langchain_mistralai import MistralAIEmbeddings
 from ragchain.core.config import settings
 
+from pathlib import Path
+
+persist_dir = Path(settings.CHROMA_PERSIST_DIRECTORY)
+persist_dir.mkdir(parents=True, exist_ok=True)
+
 def get_vector_store() -> Chroma:
     return Chroma(
         collection_name=settings.VECTOR_STORE_COLLECTION_NAME,
