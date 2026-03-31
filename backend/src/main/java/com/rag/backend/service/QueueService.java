@@ -24,6 +24,10 @@ public class QueueService {
         return userQueue.poll();
     }
 
+    public String peekNextUserInQueue() {
+        return userQueue.peek();
+    }
+
     public int getQueuePosition(String userId) {
         return new ArrayList<>(userQueue).indexOf(userId) + 1;
     }

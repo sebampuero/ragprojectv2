@@ -39,8 +39,10 @@ public class SessionManagerService {
     public void removeWaitingUser(String userId, SseEmitter emitter) {
         log.info("Removing user {} from waiting list.", userId);
         if (queueService.isUserInQueue(userId)) {
-            sseEventService.notifyAllUsers(EventType.QUEUE_SIZE, queueService.getQueueSize());
             queueService.removeFromQueue(userId);
+            for (int i = 1; i <= queueService.getQueueSize(); i++) {
+                sseEventService.notifyUser(queueService.peekNextUserInQueue(), EventType.QUEUE_SIZE, i);
+            }
             sseEventService.unsubscribe(userId, emitter);
         }
     }
@@ -56,7 +58,9 @@ public class SessionManagerService {
         }
 
         String nextUserId = queueService.getNextUserInQueue();
-        sseEventService.notifyAllUsers(EventType.QUEUE_SIZE, queueService.getQueueSize());
+        for (int i = 1; i <= queueService.getQueueSize(); i++) {
+            sseEventService.notifyUser(queueService.peekNextUserInQueue(), EventType.QUEUE_SIZE, i);
+        }
         if (nextUserId != null) {
             log.info("Promoting next user {} from waiting list.", nextUserId);
             SseEmitter emitter = sseEventService.getEmitter(nextUserId);
@@ -135,7 +139,7 @@ public class SessionManagerService {
         }
         sseEventService.subscribe(userId, emitter);
         sseEventService.notifyUser(userId, EventType.WAIT_IN_Q);
-        sseEventService.notifyAllUsers(EventType.QUEUE_SIZE, queueService.getQueueSize());
+        sseEventService.notifyUser(userId, EventType.QUEUE_SIZE, queueService.getQueueSize());
         log.info("User {} added to waiting list.", userId);
     }
 
