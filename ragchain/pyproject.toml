@@ -10,7 +10,7 @@ dependencies = [
     "pydantic-settings",
     "redis",
     "langchain-community>=0.4.1",
-    "langchain-mistralai>=1.1.2",
+    "langchain-mistralai>=1.1.4",
     "langchain-chroma>=1.1.0",
     "langchain-deepseek>=1.0.1",
     "langchain-core>=1.2.19",
